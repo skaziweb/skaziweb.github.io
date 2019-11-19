@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>convForm - example</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+	<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="dist/jquery.convform.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link rel="stylesheet" href="dist/jquery-ui.min.css">
+	<link rel="stylesheet" href="dist/jquery-ui.structure.min.css">
+	<link rel="stylesheet" href="dist/jquery-ui.theme.min.css">
+	<link rel="stylesheet" type="text/css" href="demo.css">
+</head>
+<body>
+	<section id="demo">
+	    <div class="vertical-align">
+	        <div class="container">
+	            <div class="row">
+	                <div class="col-sm-6 col-sm-offset-3 col-xs-offset-0">
+	                    <div class="card no-border">
+	                        <div id="chat">
+	                            <form action="" method="GET" class="hidden">
+									<input 
+										type="text" 
+										name="name"
+										placeholder="Введите ваше имя:"
+										data-no-answer="true"
+	                                	data-conv-question="Привет! Я ваш помощник Новакид! Давайте запишемся на пробный урок!">
+									<input 
+										type="text" 
+										name="name"
+										placeholder="Введите ваше имя:"
+										data-no-answer="true"
+	                                	data-conv-question="Как только вам надоест со мной болтать, отправьте мне команду end. И мы начнем сначала.">
+									<input 
+										type="date" 
+										name="name"
+										placeholder="Введите имя ребенка:"
+	                                	data-conv-question="Как зовут вашего ребенка ?">
+	                            </form>
+	                        </div>
+	                    </div>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</section>
+	<script type="text/javascript" src="jquery-3.4.1.min.js"></script>
+	<script type="text/javascript" src="dist/autosize.min.js"></script>
+	<script type="text/javascript" src="dist/jquery.convform.js"></script>
+	<script type="text/javascript" src="dist/jquery.maskedinput.js"></script>
+	<script type="text/javascript" src="dist/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="dist/common.js"></script>
+</body>
+</html>
