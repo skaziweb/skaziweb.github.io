@@ -1,3 +1,5 @@
+const api = 'https://api-qa.novakidschool.com/api/0/';
+
 /* Russian (UTF-8) initialisation for the jQuery UI date picker plugin. */
 /* Written by Andrew Stromnov (stromnov@gmail.com). */
 (function (factory) {
@@ -56,11 +58,33 @@ function getTimeZone() {
         return timezone;
     }
 }
+
+function availableDays(){
+    return $.ajax({
+        url: api + 'teachers_schedule/days',
+        data: {
+            trial_id: data && data.id ? data.id : undefined,
+            is_busy: false,
+            accept_new_students: true,
+            trial_rank_over_zero: true,
+            region_code: regionCode || undefined,
+            gender: isYoungAndFemaleChild($('#choose-first-child-year').data('date'), $('input[name=firstChildGender]')) ? 'female' : undefined,
+            teacher_l0_certified: isPreschoolChildYear($('#choose-first-child-year').data('date')) ? true : undefined,
+            //teacher_is_near_native: $('#cbxOnlyNative').is(':checked') ? false : undefined,
+            teacher_is_near_native: teacherSelector ? $('input.thx-teacher-type:checked').val() !== 'native' : defaultTeacherType !== 'native',
+            start_time__gte: from,
+            start_time__lte: to,
+            timestamp: new Date().getTime()
+        }
+    });
+}
+
 var now = (new Date());
 var USER_DATA = {
     email: '',
     name: '',
     phone: '',
+    gender: '',
     promo_code: '',
     //students: students,
     timezone: getTimeZone(),
@@ -72,11 +96,30 @@ var USER_DATA = {
 var TEST_CONFIG = {
     name: {
         pattern: /[a-zA-ZА-Яа-яёй]{3,}/,
-        nextStateName: 'age'
+        nextStateName: 'gender'
+    },
+    gender: {
+        nextStateName: 'age',
+        nextState: {
+            type: 'select',
+            questions: ['Уточните пол ребенка.'],
+            mask: '',
+            name: 'gender',
+            disabled: true,
+            answers: [{
+                    text: 'Мальчик',
+                    value: 'male'
+                },
+                {
+                    text: 'Девочка',
+                    value: 'female'
+                }
+            ]
+        }
     },
     age: {
         pattern: /([\d]{1,2}\.){2}[\d]{4}/,
-        nextStateName: 'email',
+        nextStateName: 'trialLessonDate',
         nextState: {
             type: 'date',
             pattern: /([\d]{1,2}\.){2}[\d]{4}/,
@@ -85,10 +128,80 @@ var TEST_CONFIG = {
             name: 'age',
             minDate: new Date(now.getFullYear() - 12, 0, 1, 0, 0, 0),
             maxDate: new Date(now.getFullYear() - 4, now.getMonth(), new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), 0, 0, 0),
-            questions: [
-                'Когда {name} родился ⏰?',
-                'Укажите дату рождаения {name} ⏰'
+            questions: ['Дата рождения ребенка']
+        }
+    },
+    trialLessonDate: {
+        nextStateName: 'trialLessonTime',
+        nextState: {
+            type: 'select',
+            name: 'trialLessonDate',
+            questions: ['Выберите дату и время пробного урока. Слоты доступны с 9 до 20.00 по мск времени.'],
+            //TODO: загружаем даты с сервера
+            answers: [
+                {
+                    text: 'Сегодня',
+                    value: '1'
+                },
+                {
+                    text: 'Завтра',
+                    value: '2'
+                },
+                {
+                    text: 'Послезавтра',
+                    value: '3'
+                }
             ]
+        }
+    },
+    trialLessonTime: {
+        nextStateName: 'teacherType',
+        nextState: {
+            type: 'select',
+            name: 'trialLessonTime',
+            questions: ['Выберите дату и время пробного урока. Слоты доступны с 9 до 20.00 по мск времени.'],
+            //TODO: загружаем время с сервера
+            answers: [
+                {
+                    text: '17:30',
+                    value: '1'
+                },
+                {
+                    text: '18:00',
+                    value: '2'
+                },
+                {
+                    text: '20:00',
+                    value: '3'
+                }
+            ]
+        }
+    },
+    teacherType: {
+        nextStateName: 'parentName',
+        nextState: {
+            type: 'select',
+            name: 'teacherType',
+            questions: ['Стандарт – занятие с преподавателем, свободно владеющим английским языком, от 490 р. / урок. Премиум– занятия с носителем английского языка, от 890 р. / урок'],
+            //TODO: загружаем время с сервера
+            answers: [
+                {
+                    text: 'Премиум',
+                    value: 'n'
+                },
+                {
+                    text: 'Стандарт',
+                    value: 'nn'
+                }
+            ]
+        }
+    },
+    parentName: {
+        nextStateName: 'email',
+        nextState: {
+            type: 'text',
+            name: 'parentName',
+            questions: [ 'Представьтесь, пожалуйста']
         }
     },
     email: {
@@ -105,8 +218,7 @@ var TEST_CONFIG = {
         }
     },
     phone: {
-        pattern: /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
-        nextStateName: 'end',
+        nextStateName: 'code',
         nextState: {
             pattern: '',
             type: 'text',
@@ -118,28 +230,14 @@ var TEST_CONFIG = {
             ]
         }
     },
-    end: {
-        pattern: /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
+    code: {
+        nextStateName: 'end',
         nextState: {
-            questions: ['Ну ок! '],
-            mask: '',
-            disabled: true
-        }
-    },
-    young: {
-        pattern: /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
-        nextState: {
-            questions: ['Ну ок! '],
-            mask: '',
-            disabled: true
-        }
-    },
-    grown: {
-        pattern: /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
-        nextState: {
-            questions: ['Ну ок! Напиши "end" и мы начнем сначала!'],
-            mask: '',
-            disabled: true
+            pattern: '',
+            type: 'text',
+            name: 'code',
+            mask: '+9-(999)-999-9999',
+            questions: ['Введите код, который мы вам отправили на sms']
         }
     }
 };
@@ -162,7 +260,9 @@ jQuery(function ($) {
         eventList: {
             onInputSubmit: function (convState, ready) {
                 console.dir(USER_DATA);
-                var key = convState.current.input.name;
+                console.dir(convState);
+                var key = convState.current.input.name || convState.current.input.selected;
+
                 var nextStateName = TEST_CONFIG[key] && TEST_CONFIG[key].nextStateName ? TEST_CONFIG[key].nextStateName : null;
 
                 if (convState.current.answer.value === 'end') {
