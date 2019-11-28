@@ -55,7 +55,7 @@ button {
 	min-height: 50vh;
 	transition: height 9999s;
 	display: flex;
-	max-width: 768px;
+	max-width: 480px;
 	min-width: 320px;
 	padding: 0 10px;
 	margin: 0 auto;
@@ -63,6 +63,9 @@ button {
 	box-shadow: 0 0 10px 2px #a2a2a2;
 	border-radius: 9px;
 }
+
 .card {
 	width: 100%;
 }
+
+

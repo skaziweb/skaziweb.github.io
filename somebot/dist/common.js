@@ -1,42 +1,3 @@
-/* Russian (UTF-8) initialisation for the jQuery UI date picker plugin. */
-/* Written by Andrew Stromnov (stromnov@gmail.com). */
-(function (factory) {
-    if (typeof define === "function" && define.amd) {
-
-        // AMD. Register as an anonymous module.
-        define(["../widgets/datepicker"], factory);
-    } else {
-
-        // Browser globals
-        factory(jQuery.datepicker);
-    }
-}(function (datepicker) {
-    datepicker.regional.ru = {
-        closeText: "Закрыть",
-        prevText: "&#x3C;Пред",
-        nextText: "След&#x3E;",
-        currentText: "Сегодня",
-        monthNames: ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-            "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
-        ],
-        monthNamesShort: ["Янв", "Фев", "Мар", "Апр", "Май", "Июн",
-            "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"
-        ],
-        dayNames: ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"],
-        dayNamesShort: ["вск", "пнд", "втр", "срд", "чтв", "птн", "сбт"],
-        dayNamesMin: ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
-        weekHeader: "Нед",
-        dateFormat: "dd.mm.yy",
-        firstDay: 1,
-        isRTL: false,
-        showMonthAfterYear: false,
-        yearSuffix: ""
-    };
-    datepicker.setDefaults(datepicker.regional.ru);
-
-    return datepicker.regional.ru;
-
-}));
 function getTimeZone() {
     var format, timezone;
     if (typeof Intl === "undefined" || typeof Intl.DateTimeFormat === "undefined") {
@@ -299,10 +260,14 @@ const openChat = function openChat(){
     var userInput;
     function changeUserInput(params) {
         if (params.type === 'date') {
-            userInput.datepicker({
-                minDate: params.minDate,
-                maxDate: params.maxDate
-            });
+            setTimeout(function(){
+                userInput.datepicker({
+                    position: 'top right',
+                    view: 'years',
+                    minDate: params.minDate,
+                    maxDate: params.maxDate
+                });
+            }, 1000);
         } else {
             userInput.mask(params.mask || '');
         }
@@ -328,8 +293,8 @@ const openChat = function openChat(){
                         nextStateName = TEST_CONFIG[key].prevStateName;
                     }
                     if (TEST_CONFIG[key] && TEST_CONFIG[key].nextState && TEST_CONFIG[key].nextState.type === 'date') {
-                        userInput.datepicker("destroy");
-                        $('#ui-datepicker-div').remove();
+                        userInput.datepicker().data('datepicker').destroy();
+                        userInput.val('');
                     }
                     USER_DATA[key] = answer;
                     if (nextStateName) {
