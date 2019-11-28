@@ -299,8 +299,6 @@ const openChat = function openChat(){
         typeInputUi: 'input',
         eventList: {
             onInputSubmit: function (convState, ready) {
-                console.dir(USER_DATA);
-                console.dir(convState);
                 var key = convState.current.input.name || convState.current.input.selected;
                 var nextStateName = TEST_CONFIG[key] && TEST_CONFIG[key].nextStateName ? TEST_CONFIG[key].nextStateName : null;
                 // TODO: Нужен ли тест валидации если это делает маска ввода?
@@ -314,8 +312,6 @@ const openChat = function openChat(){
                     } else {
                         answer = convState.current.answer.text;
                     }
-                    // TODO: Обработка предыдущий шаг.
-                    console.log()
                     if (convState.current.answer.value === 'stepBack') {
                         nextStateName = TEST_CONFIG[key].prevStateName;
                     }
