@@ -276,6 +276,19 @@ var TEST_CONFIG = {
             mask: '999999',
             questions: ['Введите код, который мы вам отправили на sms']
         }
+    },
+    end: {
+        nextState: {
+            type: 'text',
+            name: 'lastquestion',
+            questions: ['Спасибо за информацию!'],
+            answers: [
+                {
+                    text: 'Закончить диалог и закрыть чат',
+                    value: 'end'
+                }
+            ]
+        }
     }
 };
 const openChat = function openChat(){
@@ -302,8 +315,7 @@ const openChat = function openChat(){
                 var key = convState.current.input.name || convState.current.input.selected;
                 var nextStateName = TEST_CONFIG[key] && TEST_CONFIG[key].nextStateName ? TEST_CONFIG[key].nextStateName : null;
                 // TODO: Нужен ли тест валидации если это делает маска ввода?
-                if (convState.current.answer.value === 'end') {
-
+                if (convState.current.answer.value === 'end' || nextStateName === 'end') {
                     convState.current.next = false;
                     setTimeout(ready, Math.random() * 500 + 100);
                 } else {
