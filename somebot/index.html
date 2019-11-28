@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<title>convForm - example</title>
+	<title>Демо чат бот</title>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
 	<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
@@ -13,6 +13,8 @@
 	<link rel="stylesheet" type="text/css" href="demo.css">
 </head>
 <body>
+	<button onclick="openChat();">Открыть чат</button>
+	<button onclick="closeChat();">Закрыть чат</button>
 	<section id="demo">
 	    <div class="vertical-align">
 	        <div class="container">
@@ -24,9 +26,17 @@
 									<input 
 										type="text" 
 										name="name"
-										placeholder="Введите имя ребенка:"
-	                                	data-conv-question="Добрый день! Я помогу вам записаться на пробный урок в Новакид.
-	                                	Скажите, как зовут вашего ребенка??">
+										data-no-answer="true"
+	                                	data-conv-question="Добрый день!">
+									<input 
+										type="text" 
+										name="name"
+										data-no-answer="true"
+	                                	data-conv-question="Я помогу вам записаться на пробный урок в Новакид.">
+									<input 
+										type="text" 
+										name="name"
+	                                	data-conv-question="Скажите, как зовут вашего ребенка??">
 	                            </form>
 	                        </div>
 	                    </div>

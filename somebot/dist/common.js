@@ -1,5 +1,3 @@
-const api = 'https://api-qa.novakidschool.com/api/0/';
-
 /* Russian (UTF-8) initialisation for the jQuery UI date picker plugin. */
 /* Written by Andrew Stromnov (stromnov@gmail.com). */
 (function (factory) {
@@ -13,7 +11,6 @@ const api = 'https://api-qa.novakidschool.com/api/0/';
         factory(jQuery.datepicker);
     }
 }(function (datepicker) {
-
     datepicker.regional.ru = {
         closeText: "Закрыть",
         prevText: "&#x3C;Пред",
@@ -80,6 +77,7 @@ function availableDays(){
 }
 
 var now = (new Date());
+var convForm;
 var USER_DATA = {
     email: '',
     name: '',
@@ -132,7 +130,7 @@ var TEST_CONFIG = {
         }
     },
     trialLessonDate: {
-        nextStateName: 'trialLessonTime',
+        nextStateName: 'trialLessonInterval',
         nextState: {
             type: 'select',
             name: 'trialLessonDate',
@@ -154,8 +152,41 @@ var TEST_CONFIG = {
             ]
         }
     },
+    trialLessonInterval: {
+        nextStateName: 'trialLessonTime',
+        prevStateName: 'trialLessonDate',
+        nextState: {
+            type: 'select',
+            name: 'trialLessonInterval',
+            questions: ['Выберите удобный для Вас интервал.'],
+            //TODO: загружаем даты с сервера
+            answers: [
+                {
+                    text: 'Утро с 9:00 до 12:30',
+                    value: '1'
+                },
+                {
+                    text: 'День с 13:00 до 17:30',
+                    value: '2'
+                },
+                {
+                    text: 'Вечер с 18:00 до 20:00',
+                    value: '3'
+                },
+                {
+                    text: 'Выбрать другой день',
+                    value: 'stepBack'
+                },
+                {
+                    text: 'END',
+                    value: 'END'
+                }
+            ]
+        }
+    },
     trialLessonTime: {
         nextStateName: 'teacherType',
+        prevStateName: 'trialLessonInterval',
         nextState: {
             type: 'select',
             name: 'trialLessonTime',
@@ -173,6 +204,10 @@ var TEST_CONFIG = {
                 {
                     text: '20:00',
                     value: '3'
+                },
+                {
+                    text: 'Выбрать интервал',
+                    value: 'stepBack'
                 }
             ]
         }
@@ -187,11 +222,11 @@ var TEST_CONFIG = {
             answers: [
                 {
                     text: 'Премиум',
-                    value: 'n'
+                    value: 'native'
                 },
                 {
                     text: 'Стандарт',
-                    value: 'nn'
+                    value: 'near-native'
                 }
             ]
         }
@@ -205,6 +240,8 @@ var TEST_CONFIG = {
         }
     },
     email: {
+        // Для кирилицы в адресе.
+        // pattern: /^[a-zA-Zа-яё0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Zа-яё0-9-]+\.[a-zA-Zа-яё0-9-]+(?:\.[a-zA-Zа-яё0-9-]+)*$/,
         pattern: /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
         nextStateName: 'phone',
         nextState: {
@@ -233,16 +270,18 @@ var TEST_CONFIG = {
     code: {
         nextStateName: 'end',
         nextState: {
-            pattern: '',
+            pattern: /\d{6}/,
             type: 'text',
             name: 'code',
-            mask: '+9-(999)-999-9999',
+            mask: '999999',
             questions: ['Введите код, который мы вам отправили на sms']
         }
     }
 };
-
-jQuery(function ($) {
+const openChat = function openChat(){
+    if (convForm) {
+        return false;
+    }
     var userInput;
     function changeUserInput(params) {
         if (params.type === 'date') {
@@ -254,7 +293,7 @@ jQuery(function ($) {
             userInput.mask(params.mask || '');
         }
     }
-    var convForm = $('#chat').convform({
+    convForm = $('#chat').convform({
         placeHolder: 'Введите текст',
         typeInputUi: 'input',
         eventList: {
@@ -262,10 +301,10 @@ jQuery(function ($) {
                 console.dir(USER_DATA);
                 console.dir(convState);
                 var key = convState.current.input.name || convState.current.input.selected;
-
                 var nextStateName = TEST_CONFIG[key] && TEST_CONFIG[key].nextStateName ? TEST_CONFIG[key].nextStateName : null;
-
+                // TODO: Нужен ли тест валидации если это делает маска ввода?
                 if (convState.current.answer.value === 'end') {
+
                     convState.current.next = false;
                     setTimeout(ready, Math.random() * 500 + 100);
                 } else {
@@ -273,6 +312,11 @@ jQuery(function ($) {
                         answer = convState.current.answer.join(', ');
                     } else {
                         answer = convState.current.answer.text;
+                    }
+                    // TODO: Обработка предыдущий шаг.
+                    console.log()
+                    if (convState.current.answer.value === 'stepBack') {
+                        nextStateName = TEST_CONFIG[key].prevStateName;
                     }
                     if (TEST_CONFIG[key] && TEST_CONFIG[key].nextState && TEST_CONFIG[key].nextState.type === 'date') {
                         userInput.datepicker("destroy");
@@ -290,4 +334,9 @@ jQuery(function ($) {
     });
     userInput = $('#userInput');
     userInput.attr('autocomplete', false);
-});
+};
+
+const closeChat = function () {
+    convForm.destroy();
+    convForm = null;
+};
