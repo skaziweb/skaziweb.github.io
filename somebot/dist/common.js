@@ -282,6 +282,7 @@ const openChat = function openChat(){
     if (convForm) {
         return false;
     }
+    $('#demo').removeClass('hidden');
     var userInput;
     function changeUserInput(params) {
         if (params.type === 'date') {
@@ -339,4 +340,5 @@ const openChat = function openChat(){
 const closeChat = function () {
     convForm.destroy();
     convForm = null;
+    $('#demo').addClass('hidden');
 };
