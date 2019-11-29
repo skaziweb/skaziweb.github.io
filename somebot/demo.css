@@ -55,7 +55,7 @@ button {
 	min-height: 50vh;
 	transition: height 9999s;
 	display: flex;
-	max-width: 480px;
+	max-width: 45vw;
 	min-width: 320px;
 	padding: 0 10px;
 	margin: 0 auto;
@@ -68,4 +68,12 @@ button {
 	width: 100%;
 }
 
+.-bottom-right- .datepicker--pointer,
+.-top-right- .datepicker--pointer {
+	right: 50%;
+	margin-right: -5px;
+}
+.datepicker.active {
+	transform: translate(65px, -10px);
+}
 
