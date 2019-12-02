@@ -1,4 +1,220 @@
-var api = "";
+var api = "https://api-qa.novakidschool.com/api/0/";
+
+var now = new Date();
+var convForm;
+var preschoolAge = 5;
+var youngAge = 8;
+var USER_DATA = {
+    email: '',
+    name: '',
+    age: '',
+    bithdate: '',
+    phone: '',
+    parsed_phone: '',
+    gender: '',
+    promo_code: '',
+    students: [],
+    timezone: getTimeZone(),
+    region_code: 'RU',
+    trialLessonTime: '',
+    visitor_id: '',
+    utm_data: '',
+    referral_code: '',
+    parentName: '',
+    id: '',
+    user_id: '',
+    isCreated: false,
+    token: '',
+    codeErr: 0,
+    answerErr: ''
+};
+
+var days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+var MorningState = 'trialLessonTimeMorning';
+var DayState = 'trialLessonTimeDay';
+var EveningState = 'trialLessonTimeEvening';
+var stepBack = {
+    text: 'Выбрать другой интервал',
+    value: 'stepBack'
+};
+var stepBackDay = {
+    text: 'Выбрать другой день',
+    value: 'stepBack'
+};
+
+var BOT_CONFIG = {
+    name: {
+        pattern: /[a-zA-ZА-Яа-яёй]{3,}/,
+        nextStateName: 'gender'
+    },
+    gender: {
+        nextStateName: 'age',
+        nextState: {
+            type: 'select',
+            questions: ['Уточните пол ребенка.'],
+            mask: '',
+            name: 'gender',
+            disabled: true,
+            answers: [{
+                    text: 'Мальчик',
+                    value: 'male'
+                },
+                {
+                    text: 'Девочка',
+                    value: 'female'
+                }
+            ]
+        }
+    },
+    age: {
+        pattern: /([\d]{1,2}\.){2}[\d]{4}/,
+        nextStateName: 'teacherType',
+        nextState: {
+            type: 'date',
+            pattern: /([\d]{1,2}\.){2}[\d]{4}/,
+            placeholder: 'Введите дату рождения',
+            mask: '99.99.9999',
+            name: 'age',
+            minDate: new Date(now.getFullYear() - 12, 0, 1, 0, 0, 0),
+            maxDate: new Date(now.getFullYear() - 4, now.getMonth(), new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), 0, 0, 0),
+            questions: ['Дата рождения ребенка']
+        }
+    },
+    teacherType: {
+        nextStateName: 'trialLessonDate',
+        nextState: {
+            type: 'select',
+            name: 'teacherType',
+            questions: ['Стандарт – занятие с преподавателем, свободно владеющим английским языком, от 490 р. / урок. Премиум– занятия с носителем английского языка, от 890 р. / урок'],
+            answers: [{
+                    text: 'Премиум',
+                    value: 'native'
+                },
+                {
+                    text: 'Стандарт',
+                    value: 'nearNative'
+                }
+            ]
+        }
+    },
+    trialLessonDate: {
+        nextStateName: 'trialLessonInterval',
+        nextState: {
+            type: 'select',
+            name: 'trialLessonDate',
+            questions: ['Выберите дату и время пробного урока. Слоты доступны с 9 до 20.00 по мск времени.'],
+            answers: []
+        }
+    },
+    trialLessonInterval: {
+        nextStateName: 'dynamic',
+        prevStateName: 'trialLessonDate',
+        nextState: {
+            type: 'select',
+            name: 'trialLessonInterval',
+            questions: ['Выберите удобный для Вас интервал.'],
+            answers: []
+        }
+    },
+    trialLessonTimeMorning: {
+        nextStateName: 'parentName',
+        prevStateName: 'trialLessonInterval',
+        nextState: {
+            type: 'select',
+            name: 'trialLessonTimeMorning',
+            questions: ['Утренние слоты'],
+            answers: []
+        }
+    },
+    trialLessonTimeDay: {
+        nextStateName: 'parentName',
+        prevStateName: 'trialLessonInterval',
+        nextState: {
+            type: 'select',
+            name: 'trialLessonTimeDay',
+            questions: ['Дневные слоты'],
+            answers: []
+        }
+    },
+    trialLessonTimeEvening: {
+        nextStateName: 'parentName',
+        prevStateName: 'trialLessonInterval',
+        nextState: {
+            type: 'select',
+            name: 'trialLessonTimeEvening',
+            questions: ['Вечерние слоты'],
+            answers: []
+        }
+    },
+    parentName: {
+        nextStateName: 'email',
+        nextState: {
+            type: 'text',
+            name: 'parentName',
+            questions: ['Представьтесь, пожалуйста']
+        }
+    },
+    email: {
+        // Для кирилицы в адресе.
+        // pattern: /^[a-zA-Zа-яё0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Zа-яё0-9-]+\.[a-zA-Zа-яё0-9-]+(?:\.[a-zA-Zа-яё0-9-]+)*$/,
+        pattern: /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
+        nextStateName: 'phone',
+        nextState: {
+            pattern: /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
+            type: 'email',
+            name: 'email',
+            questions: [
+                'Укажите вашу почту для связи?',
+                'Давайте продолжим регистрацию, напишите вашу почту'
+            ]
+        }
+    },
+    phone: {
+        nextStateName: 'code',
+        nextState: {
+            pattern: '',
+            type: 'text',
+            name: 'phone',
+            mask: '+9-(999)-999-9999',
+            questions: [
+                'Укажите ваш телефон?',
+                'Для окончания регистрации необходимо ввести телефон, куда я отправлю смс для подтверждения.'
+            ]
+        }
+    },
+    code: {
+        nextStateName: 'compareCode',
+        nextState: {
+            pattern: /\d{6}/,
+            type: 'text',
+            name: 'code',
+            mask: '999999',
+            questions: ['Введите код, который мы вам отправили на sms']
+        }
+    },
+    compareCode: {
+        nextStateName: 'end',
+        nextState: {
+            pattern: /\d{6}/,
+            type: 'text',
+            name: 'compareCode',
+            mask: '999999',
+            questions: ''
+        }
+    },
+    end: {
+        nextState: {
+            type: 'text',
+            name: 'lastquestion',
+            questions: ['Спасибо за информацию!'],
+            answers: [{
+                text: 'Закончить диалог и закрыть чат',
+                value: 'end'
+            }]
+        }
+    }
+};
+
 function getTimeZone() {
     var format, timezone;
     if (typeof Intl === "undefined" || typeof Intl.DateTimeFormat === "undefined") {
@@ -21,6 +237,13 @@ function dateToUTCStr(d) {
     d = new Date(d);
     var date = d.getUTCFullYear() + '-' + zerofix(d.getUTCMonth() + 1) + '-' + zerofix(d.getUTCDate());
     var time = zerofix(d.getUTCHours()) + ':' + zerofix(d.getUTCMinutes()) + ':' + zerofix(d.getUTCSeconds());
+    return date + 'T' + time + '.000Z';
+}
+
+function dateToStr(d) {
+    d = new Date(d);
+    var date = d.getFullYear() + '-' + zerofix(d.getMonth() + 1) + '-' + zerofix(d.getDate());
+    var time = zerofix(d.getHours()) + ':' + zerofix(d.getMinutes()) + ':' + zerofix(d.getSeconds());
     return date + 'T' + time + '.000Z';
 }
 
@@ -48,6 +271,17 @@ function isPreschoolChildYear(date) {
     return d.getTime() >= new Date().getTime();
 }
 
+function createAuthToken(login, password) {
+    return $.ajax({
+        url: api + 'auth/tokens',
+        method: 'post',
+        data: {
+            login: login,
+            password: password
+        }
+    });
+}
+
 function makeTrial() {
     var data = {
         "email": USER_DATA.email,
@@ -55,11 +289,11 @@ function makeTrial() {
         "phone": USER_DATA.phone,
         "promo_code": USER_DATA.promo_code,
         //"students": students,
-        "timezone": getTimeZone(),
+        "timezone": USER_DATA.timezone,
         "region_code": 'RU',
         "visitor_id": USER_DATA.visitor_id,
-        'utm_data': utm_data || undefined,
-        "referral_code": USER_DATA.promo_code || (utm_data && utm_data.ref)
+        'utm_data': USER_DATA.utm_data || undefined,
+        "referral_code": USER_DATA.promo_code //|| (utm_data && utm_data.ref)
     };
     return $.ajax({
         url: api + 'trial_requests',
@@ -68,6 +302,56 @@ function makeTrial() {
             'Content-Type': 'application/json'
         },
         data: JSON.stringify(data)
+    });
+}
+
+function postUserCandidate(phone) {
+    return $.ajax({
+        url: api + 'trial_requests/' + USER_DATA.id + '/user_candidates',
+        method: 'post',
+        data: {
+            phone: phone,
+            email: null
+        }
+    });
+}
+
+function createStudent(token, id, student) {
+    function operation() {
+        return $.ajax({
+            url: api + 'users/' + id + '/students/' + student.id + '/schedule/operations',
+            method: 'post',
+            headers: {
+                'X-Novakid-Auth': token
+            },
+            data: {
+                action: 'safe_reserve',
+                start_time: student.start_time,
+                //teacher_id: student.teacher_id,
+                teacher_is_near_native: student.teacher_is_near_native
+            }
+        });
+    }
+
+    if (student.id) {
+        return operation();
+    }
+
+    return $.ajax({
+        url: api + 'users/' + id + '/students',
+        method: 'post',
+        headers: {
+            'X-Novakid-Auth': token
+        },
+        data: {
+            name: student.name,
+            gender: student.gender,
+            birth_date: student.birth_date,
+            birth_year: student.birth_year
+        }
+    }).then(function (rsp) {
+        student.id = rsp.id;
+        return operation();
     });
 }
 
@@ -91,7 +375,8 @@ function availableDays(){
         url: api + 'teachers_schedule/days',
         data: data
     });
-};
+}
+
 function availableSlot() {
     var date = new Date(USER_DATA.trialLessonDate.split('.').reverse().join(' '));
     var data = {
@@ -110,23 +395,23 @@ function availableSlot() {
         timestamp: new Date().getTime()
     };
     return $.ajax({
-        url: api + 'https://api-qa.novakidschool.com/api/0/teachers_schedule/slots',
+        url: api + 'teachers_schedule/slots',
         data: data
     });
-};
+}
 
 function splitSlots(data) {
     BOT_CONFIG[EveningState].nextState.answers= [];
     BOT_CONFIG[DayState].nextState.answers = [];
     BOT_CONFIG[MorningState].nextState.answers = [];
     return new Promise(function(resolve, reject){
-        
         var slots = data.map(function (e) {
             var time = e.start_time.substr(11, 5);
+            var strTime = new Date(e.start_time).getTime();
             var teacher = e.teacher_id;
             return {
                 text: time,
-                value: "" + time + ":" + teacher
+                value: strTime + ":" + teacher
             };
         });
         for (var idx in slots) {
@@ -171,206 +456,7 @@ function getTimeIntervalAnswers(answers){
     });
 }
 
-var now = new Date();
-var convForm;
-var preschoolAge = 5;
-var youngAge = 8;
-var USER_DATA = {
-    email: '',
-    name: '',
-    age:'',
-    bithdate: '',
-    phone: '',
-    gender: '',
-    promo_code: '',
-    //students: students,
-    timezone: getTimeZone(),
-    region_code: 'RU',
-    visitor_id: '',
-    utm_data: '',
-    referral_code: '',
-    parentName:'',
-    phone:'',
 
-};
-
-var MorningState = 'trialLessonTimeMorning';
-var DayState = 'trialLessonTimeDay';
-var EveningState = 'trialLessonTimeEvening';
-var stepBack = {
-    text: 'Выбрать другой интервал',
-    value: 'stepBack'
-};
-var stepBackDay = {
-    text: 'Выбрать другой день',
-    value: 'stepBack'
-};
-
-var BOT_CONFIG = {
-    name: {
-        pattern: /[a-zA-ZА-Яа-яёй]{3,}/,
-        nextStateName: 'gender'
-    },
-    gender: {
-        nextStateName: 'age',
-        nextState: {
-            type: 'select',
-            questions: ['Уточните пол ребенка.'],
-            mask: '',
-            name: 'gender',
-            disabled: true,
-            answers: [{
-                    text: 'Мальчик',
-                    value: 'male'
-                },
-                {
-                    text: 'Девочка',
-                    value: 'female'
-                }
-            ]
-        }
-    },
-    age: {
-        pattern: /([\d]{1,2}\.){2}[\d]{4}/,
-        nextStateName: 'trialLessonDate',
-        nextState: {
-            type: 'date',
-            pattern: /([\d]{1,2}\.){2}[\d]{4}/,
-            placeholder: 'Введите дату рождения',
-            mask: '99.99.9999',
-            name: 'age',
-            minDate: new Date(now.getFullYear() - 12, 0, 1, 0, 0, 0),
-            maxDate: new Date(now.getFullYear() - 4, now.getMonth(), new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), 0, 0, 0),
-            questions: ['Дата рождения ребенка']
-        }
-    },
-    trialLessonDate: {
-        nextStateName: 'trialLessonInterval',
-        nextState: {
-            type: 'select',
-            name: 'trialLessonDate',
-            questions: ['Выберите дату и время пробного урока. Слоты доступны с 9 до 20.00 по мск времени.'],
-            answers: []
-        }
-    },
-    trialLessonInterval: {
-        nextStateName: 'dynamic',
-        prevStateName: 'trialLessonDate',
-        nextState: {
-            type: 'select',
-            name: 'trialLessonInterval',
-            questions: ['Выберите удобный для Вас интервал.'],
-            answers: []
-        }
-    },
-    trialLessonTimeMorning: {
-        nextStateName: 'teacherType',
-        prevStateName: 'trialLessonInterval',
-        nextState: {
-            type: 'select',
-            name: 'trialLessonTimeMorning',
-            questions: ['Утренние слоты'],
-            answers: []
-        }
-    },
-    trialLessonTimeDay: {
-        nextStateName: 'teacherType',
-        prevStateName: 'trialLessonInterval',
-        nextState: {
-            type: 'select',
-            name: 'trialLessonTimeDay',
-            questions: ['Дневные слоты'],
-            answers: []
-        }
-    },
-    trialLessonTimeEvening: {
-        nextStateName: 'teacherType',
-        prevStateName: 'trialLessonInterval',
-        nextState: {
-            type: 'select',
-            name: 'trialLessonTimeEvening',
-            questions: ['Вечерние слоты'],
-            answers: []
-        }
-    },
-    teacherType: {
-        nextStateName: 'parentName',
-        nextState: {
-            type: 'select',
-            name: 'teacherType',
-            questions: ['Стандарт – занятие с преподавателем, свободно владеющим английским языком, от 490 р. / урок. Премиум– занятия с носителем английского языка, от 890 р. / урок'],
-            answers: [
-                {
-                    text: 'Премиум',
-                    value: 'native'
-                },
-                {
-                    text: 'Стандарт',
-                    value: 'near-native'
-                }
-            ]
-        }
-    },
-    parentName: {
-        nextStateName: 'email',
-        nextState: {
-            type: 'text',
-            name: 'parentName',
-            questions: [ 'Представьтесь, пожалуйста']
-        }
-    },
-    email: {
-        // Для кирилицы в адресе.
-        // pattern: /^[a-zA-Zа-яё0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Zа-яё0-9-]+\.[a-zA-Zа-яё0-9-]+(?:\.[a-zA-Zа-яё0-9-]+)*$/,
-        pattern: /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
-        nextStateName: 'phone',
-        nextState: {
-            pattern: /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
-            type: 'email',
-            name: 'email',
-            questions: [
-                'Укажите вашу почту для связи?',
-                'Давайте продолжим регистрацию, напишите вашу почту'
-            ]
-        }
-    },
-    phone: {
-        nextStateName: 'code',
-        nextState: {
-            pattern: '',
-            type: 'text',
-            name: 'phone',
-            mask: '+9-(999)-999-9999',
-            questions: [
-                'Укажите ваш телефон?',
-                'Для окончания регистрации необходимо ввести телефон, куда я отправлю смс для подтверждения.'
-            ]
-        }
-    },
-    code: {
-        nextStateName: 'end',
-        nextState: {
-            pattern: /\d{6}/,
-            type: 'text',
-            name: 'code',
-            mask: '999999',
-            questions: ['Введите код, который мы вам отправили на sms']
-        }
-    },
-    end: {
-        nextState: {
-            type: 'text',
-            name: 'lastquestion',
-            questions: ['Спасибо за информацию!'],
-            answers: [
-                {
-                    text: 'Закончить диалог и закрыть чат',
-                    value: 'end'
-                }
-            ]
-        }
-    }
-};
 var openChat = function openChat(){
     if (convForm) {
         return false;
@@ -395,7 +481,12 @@ var openChat = function openChat(){
     convForm = $('#chat').convform({
         placeHolder: 'Введите текст',
         typeInputUi: 'input',
+        selectInputStyle: 'disabled',
+        selectInputDisabledText: 'Выберите вариант ответа',
         eventList: {
+            onSubmitForm: function(){
+                return false;
+            },
             onInputSubmit: function (convState, ready) {
                 var key = convState.current.input.name || convState.current.input.selected;
                 var nextStateName = BOT_CONFIG[key] && BOT_CONFIG[key].nextStateName ? BOT_CONFIG[key].nextStateName : null;
@@ -425,9 +516,17 @@ var openChat = function openChat(){
                     }
                     if (key === 'gender' || key === 'teacherType') {
                         USER_DATA[key] = value;
+                    } else if (key === 'trialLessonDate') {
+                        USER_DATA[key] = value;
+                    } else if (key === 'trialLessonTimeMorning' || key === 'trialLessonTimeDay' || key === 'trialLessonTimeEvening') {
+                        USER_DATA.trialLessonTime = convState.current.answer.value;
+                    } else if (key === 'code') {
+                        
                     } else if (key === 'age') {
                         var bithdate = new Date(answer.split('.').reverse().join(' '));
                         USER_DATA.bithdate = answer.split('.').reverse().join(' ');
+                        USER_DATA.birth_date = dateToStr(new Date(USER_DATA.bithdate));
+                        USER_DATA.birth_year = new Date(USER_DATA.bithdate).getFullYear();
                         USER_DATA[key] = (new Date().getFullYear() - bithdate.getFullYear());
                     } else {
                         USER_DATA[key] = answer;
@@ -440,8 +539,8 @@ var openChat = function openChat(){
                                 if (rsp && rsp.days.length > 0) {
                                     answers = rsp.days.map(function (e, idx) {
                                         return {
-                                            text: e.substr(0, 10).split('-').reverse().join('.'),
-                                            value: "" + idx + ""
+                                            text: e.substr(0, 10).split('-').reverse().join('.') + " " +days[(new Date(e).getDay())],
+                                            value: e.substr(0, 10).split('-').reverse().join('.')
                                         };
                                     });
                                 } else {
@@ -451,9 +550,12 @@ var openChat = function openChat(){
                                     type: 'select',
                                     name: 'trialLessonDate',
                                     questions: ['Выберите дату и время пробного урока. Слоты доступны с 9 до 20.00 по мск времени.'],
-                                    answers: answers
+                                    answers: answers.length > 6 ? answers.slice(0, 7) : answers
                                 };
                                 convState.current.next = convState.newState(nextState);
+                            })
+                            .catch(function (err) {
+                                console.dir(err);
                             });
                         } else if (nextStateName === 'trialLessonInterval') {
                             availableSlot()
@@ -473,6 +575,60 @@ var openChat = function openChat(){
                                     answers: rsp
                                 };
                                 convState.current.next = convState.newState(nextState);
+                            })
+                            .catch(function (err) {
+                                console.dir(err);
+                            });
+                        } else if (nextStateName === 'code') {
+                            makeTrial()
+                            .then(function (rsp) {
+                                data = rsp;
+                                USER_DATA.token = encodeURIComponent(btoa(JSON.stringify({
+                                    id: data.id,
+                                    email: data.email,
+                                    phone: data.parsed_phone,
+                                    region_code: data.region_code
+                                })));
+                                USER_DATA.parsed_phone = data.parsed_phone;
+                                USER_DATA.id = data.id;
+                                return postUserCandidate(USER_DATA.parsed_phone);
+                            })
+                            .then(function (rsp) {
+                                USER_DATA.isCreated = true;
+                                convState.current.next = convState.newState(BOT_CONFIG[nextStateName].nextState);
+                            })
+                            .catch(function(err){
+                                console.dir(err);
+                            });
+                        } else if (nextStateName === 'compareCode') {
+                            createAuthToken(USER_DATA.parsed_phone, answer)
+                            .then(function(rsp){
+                                USER_DATA.user_id = rsp.user_id;
+                                USER_DATA.token = rsp.value;
+                                var value = USER_DATA.trialLessonTime.split(':'),
+                                    time = new Date(+value[0]),
+                                    teacher_id = value[1];
+                                var student = {
+                                    'name': USER_DATA.name,
+                                    'birth_date': USER_DATA.birth_date,
+                                    'birth_year': USER_DATA.birth_year,
+                                    'gender': USER_DATA.gender,
+                                    'start_time': dateToUTCStr(time),
+                                    'start_time_date': time,
+                                    'is_preschool': isPreschoolChildYear(new Date(USER_DATA.bithdate)),
+                                    'is_young': isYoungChildYear(new Date(USER_DATA.bithdate)),
+                                    'teacher_is_near_native': USER_DATA.teacherType
+                                };
+                                USER_DATA.students.push(student);
+                                console.table(USER_DATA.students[0]);
+                                return createStudent(USER_DATA.token, USER_DATA.user_id, USER_DATA.students[0]);
+                            })
+                            .then(function (rsp) {
+                                console.dir(rsp);
+                                convState.current.next = convState.newState(BOT_CONFIG.code.nextState);
+                            })
+                            .catch(function(err){
+                                console.dir(err);
                             });
                         } else {
                             convState.current.next = convState.newState(BOT_CONFIG[nextStateName].nextState);
@@ -487,7 +643,7 @@ var openChat = function openChat(){
     userInput.attr('autocomplete', false);
 };
 
-const closeChat = function () {
+var closeChat = function () {
     if (convForm) {
         convForm.destroy();
         convForm = null;
