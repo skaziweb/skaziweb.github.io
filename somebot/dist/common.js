@@ -504,7 +504,7 @@ var openChat = function openChat(){
                         value = convState.current.answer.value;
                     }
 
-                    if (convState.current.answer.value === 'stepBack') {
+                    if (value === 'stepBack') {
                         nextStateName = BOT_CONFIG[key].prevStateName;
                     }
                     if (nextStateName === 'dynamic') {
@@ -579,6 +579,12 @@ var openChat = function openChat(){
                             .catch(function (err) {
                                 console.dir(err);
                             });
+                        } else if (nextStateName === 'resendCode') {
+                            postUserCandidate(USER_DATA.parsed_phone)
+                            .then(function(rsp){
+                                USER_DATA.isCreated = true;
+                                convState.current.next = convState.newState(BOT_CONFIG.code.nextState);
+                            });
                         } else if (nextStateName === 'code') {
                             makeTrial()
                             .then(function (rsp) {
@@ -601,6 +607,7 @@ var openChat = function openChat(){
                                 console.dir(err);
                             });
                         } else if (nextStateName === 'compareCode') {
+                            var newState = {};
                             createAuthToken(USER_DATA.parsed_phone, answer)
                             .then(function(rsp){
                                 USER_DATA.user_id = rsp.user_id;
@@ -622,10 +629,49 @@ var openChat = function openChat(){
                                 USER_DATA.students.push(student);
                                 console.table(USER_DATA.students[0]);
                                 return createStudent(USER_DATA.token, USER_DATA.user_id, USER_DATA.students[0]);
+                            }, function(err){
+                                if(err && err.status == 422) {
+                                    console.dir(typeof(err.status));
+                                    nextState = {
+                                        type: 'text',
+                                        name: 'validationErr',
+                                        questions: [
+                                            'Введен не верный код.'
+                                        ],
+                                        answers: [
+                                            {
+                                                text: 'Попробовать снова',
+                                                value: 'compareCode'
+                                            },
+                                            {
+                                                text: 'Запросить код повторно',
+                                                value: 'resendCode'
+                                            }
+                                        ]
+                                    }
+                                    return nextState
+                                } else {
+                                    nextState = {
+                                        type: 'text',
+                                        name: 'someErr',
+                                        questions: [
+                                            'Во время работы возникла непредвиденная ошибка! Давайте закроем чат и попробуем по новой?',
+                                            'Что то пошло не по плану, попробуйте снова! Давайте закроем чат и попробуем по новой?'
+                                        ],
+                                        answers: [{
+                                            text: 'Закончить диалог и закрыть чат',
+                                            value: 'end'
+                                        }]
+                                    }    
+                                    return nextState
+                                }
                             })
                             .then(function (rsp) {
-                                console.dir(rsp);
-                                convState.current.next = convState.newState(BOT_CONFIG.code.nextState);
+                                if (rsp.name === 'validationErr' || rsp.name === 'someErr') {
+                                    convState.current.next = convState.newState(rsp);
+                                } else {
+                                    convState.current.next = convState.newState(BOT_CONFIG.end.nextState);
+                                }
                             })
                             .catch(function(err){
                                 console.dir(err);
