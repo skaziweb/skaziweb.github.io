@@ -1,1 +1,0 @@
-{"version":3,"sources":["webpack://src/pages/Portal/styles.module.scss"],"names":[],"mappings":"AAAA,qBACE,eAAgB","file":"12.abd32891.chunk.css","sourcesContent":[".portal {\r\n  position: static;\r\n}\r\n"]}
